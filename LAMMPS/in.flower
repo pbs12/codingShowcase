@@ -1,0 +1,214 @@
+##################################
+###########SIMULATION#############
+##################################
+units		    metal #Angstroms, eV, K
+atom_style	    full
+bond_style      harmonic
+angle_style     harmonic
+boundary        p p p
+
+read_data	    data.system
+
+group tile1 molecule 1 3
+group tile2 molecule 2 4
+group tiles union tile1 tile2 
+group flowers type 3
+group tile1Flowers intersect flowers tile1
+group tile2Flowers intersect flowers tile2
+group tethers type 4
+group tethers_dna type 4 7
+group fixed type 1 2 3 8 9
+group tethers_tiles union tethers tiles
+
+variable damping_factor equal 1 #picoseconds
+timestep 0.01 #picoseconds
+
+#################################
+##########SYSTEM#################
+#################################
+
+variable c equal 1 #salt concentration, M
+variable debye_length equal 3.0702/sqrt($c) #@298 K, Angstroms
+variable kappa equal 1/${debye_length} #1/Angstroms
+variable debye_cutoff equal 4*${debye_length} #Angstroms
+dielectric 80
+
+variable T equal 298 #K
+variable k_b equal 1380649/16021766340 #eV K-1
+variable kT equal ${T}*${k_b} #eV
+
+#######################################################
+#####INTERACTIONS BETWEEN TILE, TETHERS,& SUBSTRATE####
+#######################################################
+
+#SUBSTRATE IS FIXED GRID, NOT TIME INTEGRATED
+
+#######################################################
+#######TETHERS -- INTERACTIONS, ANGLES, & BONDS########
+#######################################################
+
+#TETHER EXCV INTERACTION
+
+variable epsilon_tether equal .001*${kT} #eV
+variable sigma equal 30 #Angstroms
+variable lj_cutoff equal 2.5*${sigma} #Angstroms
+
+variable epsilon_surface equal 0.001 #eV
+variable sigma2 equal 30 #Angstroms
+variable lj_cutoff2 equal ${sigma2} #Angstroms
+
+variable epsilon_tile equal .001*${kT} #eV
+variable sigma_tile equal 30 #Angstroms
+variable lj_cutoff_tile equal 2.5*${sigma_tile} #Angstroms
+
+variable epsilon_dna equal .001*${kT} #eV
+variable sigma_dna equal 20 #Angstroms
+variable lj_cutoff_dna equal 2.5*${sigma_dna} #Angstroms
+
+variable epsilon_flower equal 0.019081  #eV 0.008673, 1.12 kcal/mol
+variable sigma_flower equal 3.02905564 #Angstroms
+variable lj_cutoff_flower equal 2.5*${sigma_flower} #Angstroms
+
+
+#################################################
+################type 1 = tiles###################
+##########type 2 = dnas attached to tiles########
+#############type 3 = flowers####################
+##########type 4 = dna tethers###################
+######type 5 = fixed point of surface-tether#####
+################type 6 = sam#####################
+#################################################
+
+pair_style lj/cut/coul/debye ${kappa} ${lj_cutoff} ${debye_cutoff}
+
+
+
+
+variable var1 equal (0.5*${sigma}+0.5*${sigma_dna})
+variable var2 equal (0.5*${lj_cutoff}+0.5*${lj_cutoff_dna})
+variable var3 equal (0.5*${sigma}+0.5*${sigma_flower})
+variable var4 equal (0.5*${lj_cutoff}+0.5*${lj_cutoff_flower})
+variable var5 equal (0.5*${sigma_dna}+0.5*${sigma_flower})
+variable var6 equal (0.5*${lj_cutoff_dna}+0.5*${lj_cutoff_flower})
+variable var7 equal (0.5*${sigma_dna}+0.5*${sigma_flower})
+variable var8 equal (0.5*${lj_cutoff}+0.5*${lj_cutoff_dna})
+variable var9 equal (0.5*${sigma_flower}+0.5*${sigma})
+variable var10 equal (0.5*${lj_cutoff}+0.5*${lj_cutoff_flower})
+variable var11 equal (${sigma2}+0.5*${sigma})
+variable var12 equal (${lj_cutoff2}+0.5*${lj_cutoff})
+variable var13 equal (${sigma2}+0.5*${sigma_flower})
+variable var14 equal (${lj_cutoff2}+0.5*${lj_cutoff_flower})
+
+
+
+pair_coeff * * 0 0 0 0
+pair_coeff 1 1 ${epsilon_tether} ${sigma} ${lj_cutoff} ${debye_cutoff}
+pair_coeff 1 2 ${epsilon_tether} ${var1} ${var2} ${debye_cutoff}
+pair_coeff 1 7 ${epsilon_tether} ${var1} ${var2} ${debye_cutoff}
+pair_coeff 1 8 ${epsilon_tether} ${var1} ${var2} ${debye_cutoff}
+pair_coeff 1 3 ${epsilon_tether} ${var3} ${var4} ${debye_cutoff}
+pair_coeff 1 4 ${epsilon_tether} ${sigma} ${lj_cutoff} ${debye_cutoff}
+pair_coeff 1 6 ${epsilon_surface} ${var11} ${var11} ${debye_cutoff}
+pair_coeff 2 2 ${epsilon_tether} ${sigma_dna} ${lj_cutoff_dna} ${debye_cutoff}
+pair_coeff 2 3 ${epsilon_tether} ${var5} ${var6} ${debye_cutoff}
+pair_coeff 2 4 ${epsilon_tether} ${var7} ${var8} ${debye_cutoff}
+pair_coeff 2 6 ${epsilon_surface} ${var11} ${var11} ${debye_cutoff}
+pair_coeff 2 7 ${epsilon_tether} ${sigma_dna} ${lj_cutoff_dna} ${debye_cutoff}
+pair_coeff 3 7 ${epsilon_tether} ${var5} ${var6} ${debye_cutoff}
+pair_coeff 4 7 ${epsilon_tether} ${var7} ${var8} ${debye_cutoff}
+pair_coeff 6 7 ${epsilon_surface} ${var11} ${var11} ${debye_cutoff}
+pair_coeff 2 8 ${epsilon_tether} ${sigma_dna} ${lj_cutoff_dna} ${debye_cutoff}
+pair_coeff 3 8 ${epsilon_tether} ${var5} ${var6} ${debye_cutoff}
+pair_coeff 4 8 ${epsilon_tether} ${var7} ${var8} ${debye_cutoff}
+pair_coeff 6 8 ${epsilon_surface} ${var11} ${var11} ${debye_cutoff}
+pair_coeff 3 3 ${epsilon_flower} ${sigma_flower} ${lj_cutoff_flower} ${debye_cutoff}
+pair_coeff 3 4 ${epsilon_tether} ${var9} ${var10} ${debye_cutoff}
+pair_coeff 3 6 ${epsilon_surface} ${var13} ${var13} ${debye_cutoff}
+pair_coeff 4 4 ${epsilon_tether} ${sigma} ${lj_cutoff} ${debye_cutoff}
+pair_coeff 4 6 ${epsilon_surface} ${var11} ${var11} ${debye_cutoff}
+
+
+#TETHER BOND
+variable equilibrium_length equal 30 #Angstroms
+variable bond_energy_tether equal 100*${kT}/2/(${equilibrium_length}*${equilibrium_length}) #eV/A^2
+bond_coeff 1 ${bond_energy_tether} ${equilibrium_length}
+
+#TETHER BENDING/ANGLE + DNA BENDING ENERGY
+variable persistence_length equal 500 #Angstroms
+variable equilibrium_angle equal 180
+variable angle_energy equal ${persistence_length}*${kT}/${equilibrium_length}/2 #eV
+angle_coeff 1 ${angle_energy} ${equilibrium_angle}
+
+#TETHER-TILE BOND
+variable tether_tile_equilibrium_length equal 30
+variable tether_tile_bond_energy equal 0.00570659
+bond_coeff 2 ${tether_tile_bond_energy} ${tether_tile_equilibrium_length}
+
+#TETHER-TILE-TILE ANGLE(angle 2 in data file)
+variable te_ti_ti_angle_energy equal 0.001*${persistence_length}*${kT}/${equilibrium_length}/2
+variable te_ti_ti_equilibrium_angle equal 90
+angle_coeff 2 ${te_ti_ti_angle_energy} ${te_ti_ti_equilibrium_angle}
+
+#TETHER-TETHER-TILE ANGLE (angle 3 in data file)
+variable te_te_ti_angle_energy equal 0.001*${persistence_length}*${kT}/${equilibrium_length}/2
+variable te_te_ti_equilibrium_angle equal 180
+angle_coeff 3 ${te_te_ti_angle_energy} ${te_te_ti_equilibrium_angle}
+
+#TETHER-SUBSTRATE-SUBSTRATE ANGLE (angle 4 in data file)
+variable te_sub_sub_angle_energy equal 0.001*${persistence_length}*${kT}/${equilibrium_length}/2
+variable te_sub_sub_equilibrium_angle equal 90
+angle_coeff 4 ${te_sub_sub_angle_energy} ${te_sub_sub_equilibrium_angle}
+
+#TETHER-TETHER-SUBSTRATE ANGLE (angle 5 in data file)
+variable te_te_sub_angle_energy equal 0.001*${persistence_length}*${kT}/${equilibrium_length}/2
+variable te_te_sub_equilibrium_angle equal 180
+angle_coeff 5 ${te_te_sub_angle_energy} ${te_te_sub_equilibrium_angle}
+
+#TETHER-SUBSTRATE BOND
+variable tether_sub_equilibrium_length equal 36
+variable tether_sub_bond_energy equal 0.001
+bond_coeff 3 ${tether_sub_bond_energy} ${tether_sub_equilibrium_length}
+
+#DNA BOND
+variable equilibrium_length_dna equal 20 #Angstroms
+variable bond_energy_dna equal 100*${kT}/2/(${equilibrium_length_dna}*${equilibrium_length_dna}) #eV/A^2
+bond_coeff 4 ${bond_energy_dna} ${equilibrium_length_dna}
+
+#FLOWERS BOND
+variable equilibrium_length_flowers equal 12.157 #Angstroms
+variable bond_energy_flowers equal 100*${kT}/2/(${equilibrium_length_flowers}*${equilibrium_length_flowers}) #eV/A^2
+bond_coeff 5 ${bond_energy_flowers} ${equilibrium_length_flowers}
+
+#######################################################
+######################SIMULATION#######################
+#######################################################
+
+#MEASUREMENT RUN
+reset_timestep  0
+
+compute        tile1perAtom tile1Flowers pe/atom
+compute        tile1FlowersPE tile1Flowers reduce sum c_tile1perAtom
+
+compute        tile2perAtom tile2Flowers pe/atom
+compute        tile2FlowersPE tile2Flowers reduce sum c_tile2perAtom
+
+compute        flowersPerAtom flowers pe/atom
+compute        flowersPE flowers reduce sum c_flowersPerAtom
+
+thermo   10000
+thermo_style  custom step etotal pe ke c_flowersPE c_tile1FlowersPE c_tile2FlowersPE 
+
+velocity all create ${T} 12345 rot yes mom yes dist gaussian
+fix 1 tethers_tiles langevin ${T} ${T} ${damping_factor} 22211
+fix 2 tethers_dna nve
+fix 3 fixed rigid/nve molecule
+
+dump 1 all custom 10000 dna_tether_equil.lammpstrj id type xu yu zu
+dump_modify 1 sort id
+
+run 50000000 #8000 ps, 8 ns
+
+undump 1
+unfix 3
+unfix 2
+unfix 1
